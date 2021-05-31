@@ -113,7 +113,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_path', type=str, default=PRJROOT + 'data/code')
     parser.add_argument('--n_epochs', type=int, default=5000,
                         help='number of epochs')
-    parser.add_argument('--batch_size', type=int, default=8,
+    parser.add_argument('--batch_size', type=int, default=12,
                         help='batch size')
     parser.add_argument('--lr', type=float, default=0.0002,
                         help='learning rate')
