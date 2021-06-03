@@ -17,7 +17,6 @@ def viz_paramseq(data):
         rotation='horizontal', fontdict={'family':'Times New Roman', 'size': 18}
     )
     plt.show()
-    plt.clf()
 
 
 if __name__ == '__main__':
