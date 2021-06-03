@@ -50,3 +50,8 @@ class Discriminator(nn.Module):
 
     def forward(self, X):
         return self.main(X)
+
+if __name__ == '__main__':
+    G = Generator(16, 10)
+    zg = torch.rand(1, 16, 10)
+    print(G(zg).shape)

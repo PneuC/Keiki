@@ -9,7 +9,7 @@ import numpy as np
 from torch import nn
 from torch.optim import Adam
 from generator.dataset import AugmentedDataset
-from generator.PSGAN.models import get_models
+from generator.PeriodicSpatialGAN.models import get_models
 from root import PRJROOT
 
 

@@ -11,24 +11,24 @@ class Sizes(Enum):
 
 class BulletTypes(Enum):
     # Tiny
-    DOT = 0         # 小弹
+    DOT = 0
     # Mid
-    DROP = 1        # 滴弹
-    STAR = 2        # 星弹
-    CORN = 3        # 米弹
-    BULLET = 4      # 铳弹
-    OFUDA = 5       # 札弹
-    KUNAI = 6       # 苦无
-    S_JADE = 7      # 小玉
-    R_JADE = 8       # 环玉
-    SQUAMA = 9     # 鳞弹
+    DROP = 1
+    STAR = 2
+    CORN = 3
+    BULLET = 4
+    OFUDA = 5
+    KUNAI = 6
+    S_JADE = 7
+    R_JADE = 8
+    SQUAMA = 9
     # Big
-    DAGGER = 10     # 刀弹
-    M_JADE = 11     # 中玉    (Middle Jade)
-    B_STAR = 12     # 大星弹  (Big Star)
+    DAGGER = 10
+    M_JADE = 11     # (Middle Jade)
+    B_STAR = 12     # (Big Star)
     ELLIPSE = 13
     # Giant
-    G_JADE = 14     # 大玉    (Giant Jade)
+    G_JADE = 14     # (Giant Jade)
 
 
 class BulletColors(Enum):
@@ -38,11 +38,7 @@ class BulletColors(Enum):
     YELLOW = 3
     PUEPLE = 4
     WHITE = 5
-#
-#
-# def is_bullet16(btype):
-#     return btype.value < BulletTypes.SLIGHTJADE.value
-#
+
 
 def get_size(btype):
     if btype.value < 1:

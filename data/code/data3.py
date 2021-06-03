@@ -1,211 +1,177 @@
 from logic.objects.bullet_enums import BulletTypes, BulletColors
 from logic.runtime.bullet_creation import BatchedBulletBuilder
-from random import randrange, uniform, shuffle
+from random import uniform, shuffle
 from data.code.augmentation import *
-from logic.danmaku.basis import Danmaku
-from logic.danmaku.common_shooters import SpiningShooter
+from logic.danmaku.basis import Danmaku, PeriodicShooter, PlayerPosKeeper
+from logic.danmaku.common_shooters import SpiningShooter, TrapezoidShooter
 from logic.danmaku.configurations import univals
 
 
-
 class D1(Danmaku):
+    # Part1 parameters
+    P1_itv = 4
+    P1_ss = -13
+    P1_ia, P1_cr, P1_bend = -45, 28, 30
+    P1_burst0, P1_burst1 = 8.8, 2.5
+    P1_bend0, P1_bend1 = 70, 114
+    P1_cargs = {'decay': 0.8, 'speed': 1.4, 'btype': BulletTypes.OFUDA}
+    # Part2
+    P2_itv = 90
+    P2_ways = 8
+    P2_kwargs = {
+        'speed': 2.0, 'burst': 9.0, 'decay': 1.8, 'snipe': True,
+        'btype': BulletTypes.M_JADE, 'color': BulletColors.WHITE
+    }
+
     def __init__(self, augmentation=False):
-        super(D1, self).__init__(move_config=(-1, 0))
-        ab, ad = 0, -9
-        r1 = 90
+        super().__init__()
+        burst1, burst2 = 8.8, 2.5
+        bend1, bend2 = 70, 114
         sargs1 = {
-            'itv': 15, 'span': 33, 'ways':2, 'speed': 2.1,
-            'btype': BulletTypes.S_JADE, 'color': BulletColors.BLUE
+            'itv': 4, 'ia': -45, 'ad': -13, 'radius': 28, 'decay': 0.8, 'ways': 2,
+            'speed': 1.4, 'btype': BulletTypes.OFUDA
         }
-        smin, smax = 2.2, 3.0
         sargs2 = {
-            'itv': 120, 'delay': 80, 'snipe': True, 'ways': 3,
-            'btype': BulletTypes.G_JADE, 'color': BulletColors.BLUE
+            'itv': 90, 'delay': 38, 'ways': 8, 'speed': 2.0, 'burst': 9.0, 'decay': 1.8, 'snipe': True,
+            'btype': BulletTypes.M_JADE, 'color': BulletColors.WHITE
         }
         if augmentation:
-            ab = uniform(0, 360)
-            ad, r1 = transform_multi(ad, r1)
-            smin, smax = transform_multi(smin, smax)
+            burst1, burst2 = transform_multi(burst1, burst2)
+            bend1, bend2 = transform_multi(bend1, bend2)
             sargs1, sargs2 = transform_dicts(sargs1, sargs2)
-        r2 = r1/ 3 ** 0.5
-        shooters0 = [
+        self.shooters.add(
             SpiningShooter(
-                ia=agl + ab, ad=ad, bend=180, radius=r1, **sargs1
-            ) for agl in (0, 120, 240)
-        ]
-        shooters1 = [
+                bend=bend1, burst=burst1, color=BulletColors.BLUE, **sargs1
+            ),
             SpiningShooter(
-                ia=agl + ab, ad=-ad, bend=180, radius=r2, **sargs1
-            ) for agl in (60, 180, 300)
-        ]
-        shooters2 = [SpiningShooter(speed=spd, **sargs2) for spd in univals(smin, smax, 3)]
-        self.shooters.add(*shooters0, *shooters1, *shooters2)
+                bend=bend2, burst=burst2, color=BulletColors.RED, **sargs1
+            ),
+            SpiningShooter(**sargs2)
+        )
+
+
+class SpiningStar(PeriodicShooter):
+    def __init__(self, itv, smid, sedge, ways, n, diffusion, ad, credit=-1, **cargs):
+        super().__init__(itv)
+        self.ways = ways
+        self.angle = 0
+        self.ad = ad
+        self.diffusion = diffusion
+        self.credit = round(credit)
+        self.n = round(n)
+        self.speeds = univals(smid, sedge, self.n)
+        self.cargs = cargs
+        self.tar = PlayerPosKeeper()
+
+    def shot(self):
+        if self.credit == 0:
+            self.dead = True
+            return
+        BatchedBulletBuilder.instance.create(
+            angle=self.angle, ways=self.ways, speed=self.speeds[0], snipe=self.tar, **self.cargs
+        )
+        for i in range(1, self.n):
+            BatchedBulletBuilder.instance.create(
+                angle=self.angle + i * D2.diffusion, speed=self.speeds[i], snipe=self.tar, ways=self.ways, **self.cargs
+            )
+            BatchedBulletBuilder.instance.create(
+                angle=self.angle - i * D2.diffusion, speed=self.speeds[i], snipe=self.tar, ways=self.ways, **self.cargs
+            )
+        self.angle += self.ad
+        self.credit -= 1
 
 
 class D2(Danmaku):
+    itv = 21
+    smin = 1.5
+    smax = 2.1
+    ways = 5
+    diffusion = 6
+    n = 3
+    credit = 3
+    ad = 57
+    cargs = {
+        'btype': BulletTypes.CORN,
+        'color': BulletColors.RED
+    }
+
     def __init__(self, augmentation=False):
         super().__init__()
-        rho1, rho2 = 80, 40
-        theta, ad = 105, 5.7
-        sargs1 = {
-            'itv': 15, 'speed': 1.1, 'span': 36, 'ways': 2, 'radius': 36,
-            'btype': BulletTypes.CORN, 'color': BulletColors.WHITE
-        }
-        sargs2 = {
-            'itv': 120, 'delay': 75, 'speed': 0.96, 'snipe': True, 'rho': 40,
-            'btype':BulletTypes.M_JADE, 'color': BulletColors.WHITE
+        self.itv = 21
+        self.args = {
+            'itv': 21, 'smid': 2.1, 'sedge': 1.5, 'ways': 5, 'diffusion': 6, 'n': 3, 'credit': 3,
+            'ad': 47, 'btype': BulletTypes.CORN, 'color': BulletColors.RED
         }
         if augmentation:
-            rho1, rho2 = transform_multi(rho1, rho2)
-            theta, ad = transform_multi(theta, ad)
-            sargs1, sargs2 = transform_dicts(sargs1, sargs2)
-        shooters0 = [
-            SpiningShooter(
-                rho=rho1, ia=agl, ad=ad, theta=theta, bend=180, **sargs1
-            ) for agl in (0, 120, 240)
-        ]
-        shooters1 = [
-            SpiningShooter(
-                rho=rho1, ia=agl, ad=-ad, theta=-theta, bend=180, **sargs1
-            ) for agl in (0, 120, 240)
-        ]
-        shooters2 = [
-            SpiningShooter(
-                rho=rho2, ia=agl, ad=ad, bend=180, **sargs1
-            ) for agl in (0, 180)
-        ]
-        shooters3 = [
-            SpiningShooter(
-                rho=rho2, ia=agl, ad=-ad, bend=180, **sargs1
-            ) for agl in (90, 270)
-        ]
-        self.shooters.add(*shooters0, *shooters1, *shooters2, *shooters3)
-        self.shooters.add(SpiningShooter(**sargs2))
+            self.itv = transform_single(self.itv)
+            self.args, = transform_dicts(self.args)
+
+    def act(self):
+        if self.cnt % round(self.itv * self.args['credit']) == 0:
+            self.shooters.add(SpiningStar(**self.args))
 
 
 class D3(Danmaku):
     def __init__(self, augmentation=False):
         super().__init__()
-        self.rho1, self.rho2 = 80, 105
-        self.ways1, self.ways2 = 3, 2
-        self.theta = 105
-        self.sargs = {
-            'itv': 8, 'radius': 36, 'credit': 7, 'speed': 1.76,
-            'btype': BulletTypes.BULLET, 'color': BulletColors.BLUE
-        }
-        self.p1_2_itv0 = 27
-        self.p1_2_angle = 0
-        self.ad = -16.5
-        s31, s32, ways3 = 2.25, 1.98, 21
-        sargs2 = {
-            'itv': 50, 'delay': 30, 'burst': 3.4, 'decay': 1.6, 'snipe': True,
-            'btype':BulletTypes.SQUAMA, 'color': BulletColors.PUEPLE
+        self.i = 0
+        self.itv = 70
+        self.colors = [BulletColors.RED, BulletColors.BLUE, BulletColors.GREEN]
+        self.args = {
+            'itv': 28, 'smid': 1.8, 'sedge': 1.2, 'ways': 4, 'diffusion': 5, 'n': 4,
+            'ad': 40, 'credit': 3, 'btype': BulletTypes.KUNAI
         }
         if augmentation:
-            self.rho1, self.rho2 = transform_multi(self.rho1, self.rho2)
-            self.ways1, self.ways2 = transform_multi(self.ways1, self.ways2)
-            self.theta, self.p1_2_itv0, self.p1_2_angle, self.ad = \
-                transform_multi(self.theta, self.p1_2_itv0, self.p1_2_angle, self.ad)
-            s31, s32, ways3 = transform_multi(s31, s32, ways3)
-            self.sargs, sargs2 = transform_dicts(self.sargs, sargs2)
-        self.shooters.add(
-            SpiningShooter(speed=s31, ways=ways3, **sargs2),
-            SpiningShooter(ia=180 / round(ways3+1), speed=s32, ways=ways3+1, **sargs2)
-        )
+            self.itv = transform_single(self.itv)
+            shuffle(self.colors)
+            self.args, = transform_dicts(self.args)
 
     def act(self):
-        if self.cnt % round(self.p1_2_itv0) == 0:
-            self.shooters.add(
-                SpiningShooter(
-                    ia=self.p1_2_angle, ways=self.ways1, bend=180, rho=self.rho1, theta=self.theta, **self.sargs
-                ),
-                SpiningShooter(
-                    ia=-self.p1_2_angle, ways=self.ways1, bend=180, rho=self.rho1, theta=-self.theta, **self.sargs
-                ),
-                SpiningShooter(
-                    ia=self.p1_2_angle, ways=self.ways2, bend=180, rho=self.rho2, **self.sargs
-                ),
-                SpiningShooter(
-                    ia=-self.p1_2_angle, ways=self.ways2, bend=180, rho=self.rho2, **self.sargs
-                )
-            )
-            self.p1_2_angle += self.ad
+        if self.cnt % round(self.itv) == 0:
+            self.shooters.add(SpiningStar(color=self.colors[self.i], **self.args))
+            self.i += 1
+            self.i %= len(self.colors)
 
 
 class D4(Danmaku):
     def __init__(self, augmentation=False):
         super().__init__()
-        cargs = {'itv': 12, 'ways': 5, 'ad': -19}
-        sargs1 = {
-            'speed': 2.2, 'bend': 60, 'radius': 30,
-            'btype': BulletTypes.CORN, 'color': BulletColors.WHITE
+        self.itv0, self.itv1, self.itv2 = 140, 5, 30
+        self.n1, self.n2 = 12, 9
+        self.ua, self.diffusion = 120, 12
+        self.cargs1 = {
+            'speed': 1.8, 'burst': 4.2, 'decay': 3.0, 'btype': BulletTypes.BULLET, 'color': BulletColors.WHITE
         }
-        sargs2 = {'bend': -75, 'radius': 50, 'btype': BulletTypes.R_JADE, 'color': BulletColors.BLUE}
-        sargs3 = {'bend': 75, 'radius': 70, 'btype': BulletTypes.R_JADE, 'color': BulletColors.RED}
-        s1, s2 = 1.5, 2.2
+        cargs2 = {
+            'speed': 1.28, 'burst': 8.4, 'decay': 1.75, 'snipe': True, 'span': 60, 'ways': 5,
+            'btype': BulletTypes.M_JADE, 'color': BulletColors.WHITE
+        }
+        delay, td = 80, 30
         if augmentation:
-            cargs, sargs1, sargs2, sargs3 = transform_dicts(cargs, sargs1, sargs2, sargs3)
-            s1, s2 = transform_multi(s1, s2)
+            self.itv0, self.itv1, self.itv2 = transform_multi(self.itv0, self.itv1, self.itv2)
+            self.n1, self.n2 = transform_multi(self.n1, self.n2)
+            self.ua, self.diffusion = transform_multi(self.ua, self.diffusion)
+            self.cargs1, cargs2 = transform_dicts(self.cargs1, cargs2)
+            delay, td = transform_multi(delay, td)
         self.shooters.add(
-            SpiningShooter(**cargs, **sargs1),
-            SpiningShooter(speed=s1, **cargs, **sargs2),
-            SpiningShooter(speed=s2, **cargs, **sargs2),
-            SpiningShooter(speed=s1, **cargs, **sargs3),
-            SpiningShooter(speed=s2, **cargs, **sargs3),
+            SpiningShooter(delay=delay, itv=self.itv0, **cargs2),
+            SpiningShooter(delay=delay + td, itv=self.itv0, **cargs2)
         )
-
-
-class D5(Danmaku):
-    def __init__(self, augmentation=False):
-        super().__init__()
-        decay0, decay1 = 0.24, 0.3
-        ab, ad = 0, 7.4
-        cargs = {
-            'rho': 75, 'itv': 5, 'ways': 2, 'speed': 0.9, 'burst': 6.6,
-            'btype': BulletTypes.BULLET, 'color': BulletColors.RED
-        }
-        if augmentation:
-            decay0, decay1 = transform_multi(decay0, decay1)
-            ab, ad = transform_multi(ab, ad)
-            cargs, = transform_dicts(cargs)
-        self.shooters.add(
-            SpiningShooter(ad=ad, theta=135 + ab, decay=decay0, **cargs),
-            SpiningShooter(ad=-ad, theta=225+ ab, decay=decay0, **cargs),
-            SpiningShooter(ad=-ad, theta=45 + ab, decay=decay1, **cargs),
-            SpiningShooter(ad=ad, theta=315 + ab, decay=decay1, **cargs)
-        )
-        self.angle = 0
-
-
-class D6(Danmaku):
-    def __init__(self, augmentation=False):
-        super().__init__()
-        self.itv = 9
-        self.sargs = {
-            'speed': 0.84, 'burst': 7.0, 'decay': 0.17, 'strlen': 84, 'ways':6, 'snipe': True,
-            'btype': BulletTypes.BULLET, 'color': BulletColors.RED
-        }
-        self.angle, self.ad, self.span = 0, 10.9, 32
-        strlen, n = 84, 6
-        sargs2 = {
-            'itv': 55, 'span': 240, 'ways': 11, 'speed': 1.13, 'snipe': True,
-            'btype': BulletTypes.BULLET, 'color': BulletColors.RED
-        }
-        if augmentation:
-            self.sargs, sargs2 = transform_dicts(self.sargs, sargs2)
-            self.itv = transform_single(self.itv)
-            self.angle, self.ad, self.span = transform_multi(self.angle, self.ad, self.span)
-            strlen, n = transform_multi(strlen, n)
-        for rho in univals(-strlen / 2, strlen / 2, round(n)):
-            theta = 90 if rho > 0 else 270
-            self.shooters.add(
-                SpiningShooter(rho=abs(rho), theta=theta, ia=180-rho, **sargs2)
-            )
 
     def act(self):
-        if self.cnt % round(self.itv) == 0:
-            BatchedBulletBuilder.instance.create(angle=self.angle, **self.sargs)
-            self.angle += self.ad
-            if abs(self.angle) > self.span:
-                self.ad = -self.ad
-
+        itv0, itv1 = round(self.itv0), round(self.itv1)
+        n1 , n2 = round(self.n1), round(self.n2)
+        t = self.cnt % itv0
+        w = t // itv1 + 1
+        angles0 = (0, self.ua, -self.ua)
+        if t % itv1 == 0 and w < n1:
+            for a0 in angles0:
+                BatchedBulletBuilder.instance.create(
+                    angle=a0, ways=w, span=(w - 1) * self.diffusion, **self.cargs1
+                )
+        w -= n1
+        if t % itv1 == 0 and 0 < w < n2:
+            for a0 in angles0:
+                BatchedBulletBuilder.instance.create(
+                    angle=a0, ways=w, span=(w - 1) * self.diffusion, **self.cargs1
+                )
