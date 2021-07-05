@@ -1,10 +1,24 @@
 # Keiki
 
-​    A bullet hell game Platform for research purpose (especially danmaku generation) written in Python.
+​    A bullet hell game platform for research purpose (especially danmaku generation) written in Python.
 
-​    In this platform, you can design "danmakus" by implement Danmaku class provided in the platform. The platform guarantee subclasses of this class can be encoded into a parameter sequence for training Generative Adversarial Nets (GANs). We will update the documentations for the danmaku designing APIs at https://github.com/PneuC/Keiki/wiki/API-Docs soon.
+​    In this platform, you can design "danmakus" by implementing Danmaku class provided in the platform. The platform guarantees subclasses of this class can be encoded into a parametric sequence for training Generative Adversarial Nets (GANs). We will update the documentations for the danmaku designing APIs at https://github.com/PneuC/Keiki/wiki/API-Docs soon.
 
-### Eviorment we have tested:
+
+Please use this bibtex if this repository is used in your work:
+
+````
+@inproceedings{wang2021keiki,
+  title={Keiki: Towards Realistic Danmaku Generation via Sequential {GANs}},
+  author={Wang, Ziqi and Liu, Jialin and Yannakakis, Georgios N.},
+  booktitle={2021 IEEE Conference on Games (CoG)},
+  pages={accepted},
+  year={2021},
+  organization={IEEE}
+}
+````
+
+### Environments that have been tested:
 
 ​    Python 3.7.6
 
@@ -26,7 +40,7 @@
 
 #### Run Game Demo:
 
-​    The recomanded ways is put encoded danmakus (in *npy* format) into *danmakus* folder, then run *run_game.py* to start. The platform will load all the npy files in this folder as the danmakus of the boss. You can also import danmaku classes at logic/boss.py and then add the imported classes into Boss.spells attributes.
+​    The recomanded way is putting encoded danmakus (in *npy* format) into *danmakus* folder, then run *run_game.py* to start. The platform will load all the npy files in this folder as the danmakus of the boss. You can also import danmaku classes at logic/boss.py and then add the imported classes into Boss.spells attributes.
 
 ##### How to play:
 
